@@ -1,0 +1,466 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MobiPay — Demo Dashboard</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #0a0f0d;
+  --surface: #111a15;
+  --surface2: #162019;
+  --border: #1e2e24;
+  --green: #00e676;
+  --green-dim: #00b85a;
+  --green-dark: #003d1f;
+  --text: #e8f5ec;
+  --muted: #5a7a64;
+  --danger: #ff5252;
+  --amber: #ffca28;
+  --mono: 'DM Mono', monospace;
+  --sans: 'Syne', sans-serif;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { background: var(--bg); color: var(--text); font-family: var(--sans); min-height: 100vh; }
+
+.app { display: grid; grid-template-columns: 240px 1fr; min-height: 100vh; }
+
+.sidebar { background: var(--surface); border-right: 1px solid var(--border); padding: 28px 20px; display: flex; flex-direction: column; gap: 4px; }
+.logo { font-size: 20px; font-weight: 800; color: var(--green); letter-spacing: -0.5px; margin-bottom: 32px; display: flex; align-items: center; gap: 8px; }
+.logo-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--green); }
+.nav-item { display: flex; align-items: center; gap: 10px; padding: 10px 14px; border-radius: 10px; font-size: 14px; font-weight: 500; color: var(--muted); cursor: pointer; transition: all 0.15s; border: none; background: none; width: 100%; text-align: left; }
+.nav-item:hover { background: var(--surface2); color: var(--text); }
+.nav-item.active { background: var(--green-dark); color: var(--green); }
+.nav-icon { font-size: 18px; width: 20px; text-align: center; }
+.nav-section { font-size: 10px; font-weight: 600; color: var(--muted); letter-spacing: 0.1em; text-transform: uppercase; padding: 16px 14px 6px; }
+
+.main { padding: 36px 40px; overflow-y: auto; }
+.page { display: none; }
+.page.active { display: block; }
+
+.page-title { font-size: 26px; font-weight: 800; margin-bottom: 6px; }
+.page-sub { font-size: 14px; color: var(--muted); margin-bottom: 32px; }
+
+.cards-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 16px; margin-bottom: 32px; }
+.stat-card { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 20px; }
+.stat-card.highlight { background: var(--green-dark); border-color: var(--green); }
+.stat-label { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 8px; }
+.stat-card.highlight .stat-label { color: #5db87a; }
+.stat-value { font-size: 28px; font-weight: 700; font-family: var(--mono); color: var(--text); }
+.stat-card.highlight .stat-value { color: var(--green); }
+.stat-change { font-size: 12px; color: var(--muted); margin-top: 4px; }
+
+.section-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
+.section-title { font-size: 15px; font-weight: 700; }
+.section-link { font-size: 13px; color: var(--green); cursor: pointer; background: none; border: none; font-family: var(--sans); }
+
+.tx-list { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; overflow: hidden; }
+.tx-item { display: flex; align-items: center; gap: 14px; padding: 14px 18px; border-bottom: 1px solid var(--border); }
+.tx-item:last-child { border-bottom: none; }
+.tx-icon { width: 38px; height: 38px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 16px; flex-shrink: 0; }
+.tx-icon.send { background: rgba(255,82,82,0.12); }
+.tx-icon.receive { background: rgba(0,230,118,0.1); }
+.tx-icon.deposit { background: rgba(255,202,40,0.1); }
+.tx-info { flex: 1; }
+.tx-name { font-size: 14px; font-weight: 600; }
+.tx-desc { font-size: 12px; color: var(--muted); margin-top: 2px; font-family: var(--mono); }
+.tx-amount { font-size: 15px; font-weight: 700; font-family: var(--mono); }
+.tx-amount.debit { color: var(--danger); }
+.tx-amount.credit { color: var(--green); }
+.tx-time { font-size: 11px; color: var(--muted); margin-top: 2px; text-align: right; font-family: var(--mono); }
+.empty { padding: 40px; text-align: center; color: var(--muted); font-size: 14px; }
+
+.form-card { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 28px; max-width: 460px; }
+.form-group { margin-bottom: 20px; }
+.form-label { font-size: 12px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 8px; display: block; }
+.form-input { width: 100%; background: var(--bg); border: 1px solid var(--border); border-radius: 10px; padding: 12px 16px; font-size: 15px; color: var(--text); font-family: var(--sans); outline: none; transition: border-color 0.15s; }
+.form-input:focus { border-color: var(--green); }
+.form-input::placeholder { color: var(--muted); }
+.btn { padding: 13px 24px; border-radius: 10px; font-size: 14px; font-weight: 700; font-family: var(--sans); cursor: pointer; border: none; transition: all 0.15s; letter-spacing: 0.02em; }
+.btn-primary { background: var(--green); color: #001a0b; width: 100%; font-size: 15px; }
+.btn-primary:hover { background: #00ff88; }
+.btn-primary:disabled { background: var(--muted); cursor: not-allowed; }
+.btn-ghost { background: none; border: 1px solid var(--border); color: var(--text); }
+.btn-ghost:hover { border-color: var(--green); color: var(--green); }
+
+.alert { padding: 12px 16px; border-radius: 10px; font-size: 13px; margin-bottom: 16px; }
+.alert-success { background: rgba(0,230,118,0.1); color: var(--green); border: 1px solid rgba(0,230,118,0.2); }
+.alert-error { background: rgba(255,82,82,0.1); color: var(--danger); border: 1px solid rgba(255,82,82,0.2); }
+
+.auth-wrap { min-height: 100vh; display: flex; align-items: center; justify-content: center; background: var(--bg); padding: 20px; }
+.auth-card { background: var(--surface); border: 1px solid var(--border); border-radius: 20px; padding: 40px; width: 100%; max-width: 400px; }
+.auth-logo { font-size: 26px; font-weight: 800; color: var(--green); margin-bottom: 8px; }
+.auth-sub { font-size: 14px; color: var(--muted); margin-bottom: 32px; }
+.auth-toggle { text-align: center; margin-top: 20px; font-size: 14px; color: var(--muted); }
+.auth-toggle span { color: var(--green); cursor: pointer; font-weight: 600; }
+
+.user-pill { margin-top: auto; display: flex; align-items: center; gap: 10px; padding: 12px 14px; background: var(--surface2); border-radius: 12px; }
+.user-avatar { width: 32px; height: 32px; border-radius: 50%; background: var(--green-dark); display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 700; color: var(--green); flex-shrink: 0; }
+.user-name { font-size: 13px; font-weight: 600; }
+.user-phone { font-size: 11px; color: var(--muted); font-family: var(--mono); }
+.logout-btn { margin-left: auto; background: none; border: none; color: var(--muted); cursor: pointer; font-size: 16px; padding: 4px; }
+.logout-btn:hover { color: var(--danger); }
+
+.pin-row { display: flex; gap: 10px; }
+.pin-row .form-input { text-align: center; font-size: 22px; font-family: var(--mono); letter-spacing: 6px; }
+
+.badge { display: inline-block; font-size: 11px; padding: 2px 8px; border-radius: 20px; font-weight: 600; }
+.badge-success { background: rgba(0,230,118,0.15); color: var(--green); }
+.badge-pending { background: rgba(255,202,40,0.15); color: var(--amber); }
+.badge-fail { background: rgba(255,82,82,0.15); color: var(--danger); }
+
+.api-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.api-table th { text-align: left; padding: 10px 16px; font-size: 11px; text-transform: uppercase; letter-spacing: 0.07em; color: var(--muted); border-bottom: 1px solid var(--border); }
+.api-table td { padding: 12px 16px; border-bottom: 1px solid var(--border); font-family: var(--mono); font-size: 12px; }
+.api-table tr:last-child td { border-bottom: none; }
+.method { display: inline-block; padding: 2px 7px; border-radius: 5px; font-size: 11px; font-weight: 700; }
+.method-get { background: rgba(0,230,118,0.15); color: var(--green); }
+.method-post { background: rgba(255,202,40,0.15); color: var(--amber); }
+
+@keyframes fadeIn { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:translateY(0); } }
+.page.active { animation: fadeIn 0.2s ease; }
+</style>
+</head>
+<body>
+
+<div id="auth-screen" class="auth-wrap">
+  <div class="auth-card">
+    <div class="auth-logo">● MobiPay</div>
+    <div class="auth-sub" id="auth-subtitle">Sign in to your wallet</div>
+    <div id="auth-alert"></div>
+
+    <div id="register-fields" style="display:none">
+      <div class="form-group">
+        <label class="form-label">Full name</label>
+        <input class="form-input" id="reg-name" placeholder="e.g. Jane Wanjiru" />
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label class="form-label">Phone number</label>
+      <input class="form-input" id="auth-phone" placeholder="0712345678" />
+    </div>
+    <div class="form-group">
+      <label class="form-label">4-digit PIN</label>
+      <div class="pin-row">
+        <input class="form-input" id="auth-pin" type="password" maxlength="4" placeholder="••••" />
+      </div>
+    </div>
+    <button class="btn btn-primary" id="auth-btn" onclick="handleAuth()">Sign in</button>
+    <div class="auth-toggle" id="auth-toggle-row">
+      No account? <span onclick="toggleAuthMode()">Create one</span>
+    </div>
+  </div>
+</div>
+
+<div id="app-screen" class="app" style="display:none">
+  <aside class="sidebar">
+    <div class="logo"><div class="logo-dot"></div>MobiPay</div>
+    <div class="nav-section">Main</div>
+    <button class="nav-item active" onclick="showPage('dashboard', this)"><span class="nav-icon">◈</span> Dashboard</button>
+    <button class="nav-item" onclick="showPage('send', this)"><span class="nav-icon">↗</span> Send money</button>
+    <button class="nav-item" onclick="showPage('deposit', this)"><span class="nav-icon">↙</span> Deposit</button>
+    <button class="nav-item" onclick="showPage('history', this)"><span class="nav-icon">☰</span> History</button>
+    <div class="nav-section">Docs</div>
+    <button class="nav-item" onclick="showPage('api', this)"><span class="nav-icon">{}</span> API reference</button>
+    <div class="user-pill" id="sidebar-user">
+      <div class="user-avatar" id="user-initials">?</div>
+      <div>
+        <div class="user-name" id="user-display-name">—</div>
+        <div class="user-phone" id="user-display-phone">—</div>
+      </div>
+      <button class="logout-btn" onclick="logout()" title="Sign out">⎋</button>
+    </div>
+  </aside>
+
+  <main class="main">
+    <div class="page active" id="page-dashboard">
+      <div class="page-title">Dashboard</div>
+      <div class="page-sub">Your wallet overview</div>
+      <div class="cards-row">
+        <div class="stat-card highlight">
+          <div class="stat-label">Available balance</div>
+          <div class="stat-value" id="dash-balance">—</div>
+          <div class="stat-change">KES · updated now</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Total sent</div>
+          <div class="stat-value" id="dash-sent">0</div>
+          <div class="stat-change">this session</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Transactions</div>
+          <div class="stat-value" id="dash-count">0</div>
+          <div class="stat-change">total records</div>
+        </div>
+      </div>
+      <div class="section-header">
+        <div class="section-title">Recent transactions</div>
+        <button class="section-link" onclick="showPage('history', document.querySelector('[onclick*=history]'))">View all →</button>
+      </div>
+      <div class="tx-list" id="dash-tx-list"><div class="empty">Loading…</div></div>
+    </div>
+
+    <div class="page" id="page-send">
+      <div class="page-title">Send money</div>
+      <div class="page-sub">Transfer funds to another MobiPay user</div>
+      <div id="send-alert"></div>
+      <div class="form-card">
+        <div class="form-group">
+          <label class="form-label">Recipient phone number</label>
+          <input class="form-input" id="send-phone" placeholder="0712345678" />
+        </div>
+        <div class="form-group">
+          <label class="form-label">Amount (KES)</label>
+          <input class="form-input" id="send-amount" type="number" placeholder="e.g. 500" min="10" max="70000"/>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Description (optional)</label>
+          <input class="form-input" id="send-desc" placeholder="e.g. Rent payment" />
+        </div>
+        <button class="btn btn-primary" onclick="sendMoney()">Send money</button>
+      </div>
+    </div>
+
+    <div class="page" id="page-deposit">
+      <div class="page-title">Deposit funds</div>
+      <div class="page-sub">Top up your MobiPay wallet</div>
+      <div id="deposit-alert"></div>
+      <div class="form-card">
+        <div class="form-group">
+          <label class="form-label">Amount (KES)</label>
+          <input class="form-input" id="deposit-amount" type="number" placeholder="e.g. 2000" min="1" max="150000"/>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Description (optional)</label>
+          <input class="form-input" id="deposit-desc" placeholder="e.g. Mpesa deposit" />
+        </div>
+        <button class="btn btn-primary" onclick="doDeposit()">Deposit to wallet</button>
+      </div>
+    </div>
+
+    <div class="page" id="page-history">
+      <div class="page-title">Transaction history</div>
+      <div class="page-sub">All your wallet activity</div>
+      <div class="tx-list" id="history-list"><div class="empty">Loading…</div></div>
+    </div>
+
+    <div class="page" id="page-api">
+      <div class="page-title">API reference</div>
+      <div class="page-sub">All endpoints — test with Postman or curl</div>
+      <div style="background:var(--surface);border:1px solid var(--border);border-radius:16px;overflow:hidden;margin-bottom:20px;">
+        <table class="api-table">
+          <thead><tr><th>Method</th><th>Endpoint</th><th>Auth?</th><th>Description</th></tr></thead>
+          <tbody>
+            <tr><td><span class="method method-post">POST</span></td><td>/api/auth/register</td><td>No</td><td style="font-family:var(--sans);color:var(--muted)">Register new user</td></tr>
+            <tr><td><span class="method method-post">POST</span></td><td>/api/auth/login</td><td>No</td><td style="font-family:var(--sans);color:var(--muted)">Login, get JWT token</td></tr>
+            <tr><td><span class="method method-get">GET</span></td><td>/api/wallet/balance</td><td>Yes</td><td style="font-family:var(--sans);color:var(--muted)">Get current balance</td></tr>
+            <tr><td><span class="method method-post">POST</span></td><td>/api/wallet/deposit</td><td>Yes</td><td style="font-family:var(--sans);color:var(--muted)">Top up wallet</td></tr>
+            <tr><td><span class="method method-post">POST</span></td><td>/api/transactions/send</td><td>Yes</td><td style="font-family:var(--sans);color:var(--muted)">Send money to user</td></tr>
+            <tr><td><span class="method method-get">GET</span></td><td>/api/transactions/history</td><td>Yes</td><td style="font-family:var(--sans);color:var(--muted)">List all transactions</td></tr>
+            <tr><td><span class="method method-get">GET</span></td><td>/api/transactions/:id</td><td>Yes</td><td style="font-family:var(--sans);color:var(--muted)">Get single transaction</td></tr>
+            <tr><td><span class="method method-get">GET</span></td><td>/api/health</td><td>No</td><td style="font-family:var(--sans);color:var(--muted)">Health check</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="form-card" style="max-width:100%">
+        <div style="font-size:13px;color:var(--muted);margin-bottom:12px;font-weight:600;text-transform:uppercase;letter-spacing:0.07em;">Example: send money</div>
+        <pre style="background:var(--bg);padding:16px;border-radius:10px;font-size:12px;font-family:var(--mono);color:#7ec89e;overflow-x:auto;line-height:1.6">curl -X POST http://localhost:5000/api/transactions/send \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "receiver_phone": "0722000001",
+    "amount": 500,
+    "description": "Lunch money"
+  }'</pre>
+      </div>
+    </div>
+  </main>
+</div>
+
+<script>
+const API = 'http://127.0.0.1:5000';
+let token = localStorage.getItem('mpay_token');
+let currentUser = JSON.parse(localStorage.getItem('mpay_user') || 'null');
+let isRegister = false;
+
+async function api(path, opts = {}) {
+  const headers = { 'Content-Type': 'application/json' };
+  if (token) headers['Authorization'] = 'Bearer ' + token;
+  const res = await fetch(API + path, { ...opts, headers: { ...headers, ...(opts.headers || {}) } });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error || 'Request failed');
+  return data;
+}
+
+function showAlert(id, msg, type) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  el.innerHTML = `<div class="alert alert-${type}">${msg}</div>`;
+  setTimeout(() => { el.innerHTML = ''; }, 5000);
+}
+
+function toggleAuthMode() {
+  isRegister = !isRegister;
+  document.getElementById('register-fields').style.display = isRegister ? 'block' : 'none';
+  document.getElementById('auth-subtitle').textContent = isRegister ? 'Create your wallet' : 'Sign in to your wallet';
+  document.getElementById('auth-btn').textContent = isRegister ? 'Create account' : 'Sign in';
+  document.getElementById('auth-toggle-row').innerHTML = isRegister
+    ? 'Have an account? <span onclick="toggleAuthMode()">Sign in</span>'
+    : 'No account? <span onclick="toggleAuthMode()">Create one</span>';
+}
+
+async function handleAuth() {
+  const phone = document.getElementById('auth-phone').value.trim();
+  const pin = document.getElementById('auth-pin').value.trim();
+  if (!phone || !pin) return showAlert('auth-alert', 'Enter phone and PIN', 'error');
+
+  const btn = document.getElementById('auth-btn');
+  btn.disabled = true;
+  btn.textContent = 'Please wait…';
+
+  try {
+    let data;
+    if (isRegister) {
+      const full_name = document.getElementById('reg-name').value.trim();
+      if (!full_name) { showAlert('auth-alert', 'Enter your full name', 'error'); btn.disabled = false; btn.textContent = 'Create account'; return; }
+      data = await api('/api/auth/register', { method: 'POST', body: JSON.stringify({ full_name, phone, pin }) });
+    } else {
+      data = await api('/api/auth/login', { method: 'POST', body: JSON.stringify({ phone, pin }) });
+    }
+    token = data.token;
+    currentUser = data.user;
+    localStorage.setItem('mpay_token', token);
+    localStorage.setItem('mpay_user', JSON.stringify(currentUser));
+    launchApp();
+  } catch (e) {
+    showAlert('auth-alert', e.message, 'error');
+    btn.disabled = false;
+    btn.textContent = isRegister ? 'Create account' : 'Sign in';
+  }
+}
+
+function launchApp() {
+  document.getElementById('auth-screen').style.display = 'none';
+  document.getElementById('app-screen').style.display = 'grid';
+  const initials = currentUser.full_name.split(' ').map(n => n[0]).join('').slice(0,2).toUpperCase();
+  document.getElementById('user-initials').textContent = initials;
+  document.getElementById('user-display-name').textContent = currentUser.full_name;
+  document.getElementById('user-display-phone').textContent = currentUser.phone;
+  loadDashboard();
+}
+
+function logout() {
+  localStorage.removeItem('mpay_token');
+  localStorage.removeItem('mpay_user');
+  token = null; currentUser = null;
+  document.getElementById('app-screen').style.display = 'none';
+  document.getElementById('auth-screen').style.display = 'flex';
+}
+
+function showPage(name, btn) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  document.getElementById('page-' + name).classList.add('active');
+  if (btn) btn.classList.add('active');
+  if (name === 'dashboard') loadDashboard();
+  if (name === 'history') loadHistory();
+}
+
+function fmtAmount(n) { return new Intl.NumberFormat('en-KE', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(n); }
+function fmtDate(iso) {
+  const d = new Date(iso + 'Z');
+  return d.toLocaleDateString('en-KE', { day: '2-digit', month: 'short' }) + ' ' + d.toLocaleTimeString('en-KE', { hour: '2-digit', minute: '2-digit' });
+}
+
+function renderTx(tx, myId) {
+  const isSend = tx.sender && tx.sender.name && tx.type === 'transfer';
+  const isDeposit = tx.type === 'deposit';
+  const icon = isDeposit ? '↙' : isSend ? '↗' : '↙';
+  const iconClass = isDeposit ? 'deposit' : isSend ? 'send' : 'receive';
+  const amtClass = isSend ? 'debit' : 'credit';
+  const sign = isSend ? '-' : '+';
+  const party = isDeposit ? 'Top-up' : isSend ? (tx.receiver?.name || tx.receiver?.phone || '—') : (tx.sender?.name || tx.sender?.phone || '—');
+  return `<div class="tx-item">
+    <div class="tx-icon ${iconClass}">${icon}</div>
+    <div class="tx-info">
+      <div class="tx-name">${party}</div>
+      <div class="tx-desc">${tx.description || tx.type}</div>
+    </div>
+    <div>
+      <div class="tx-amount ${amtClass}">${sign}${fmtAmount(tx.amount)}</div>
+      <div class="tx-time">${fmtDate(tx.created_at)}</div>
+    </div>
+  </div>`;
+}
+
+async function loadDashboard() {
+  try {
+    const bal = await api('/api/wallet/balance');
+    document.getElementById('dash-balance').textContent = fmtAmount(bal.balance);
+
+    const hist = await api('/api/transactions/history?limit=5');
+    document.getElementById('dash-count').textContent = hist.total;
+
+    const sent = hist.transactions.filter(t => t.type === 'transfer').reduce((s, t) => s + t.amount, 0);
+    document.getElementById('dash-sent').textContent = fmtAmount(sent);
+
+    const list = document.getElementById('dash-tx-list');
+    if (!hist.transactions.length) { list.innerHTML = '<div class="empty">No transactions yet — send or deposit to get started</div>'; return; }
+    list.innerHTML = hist.transactions.map(t => renderTx(t, currentUser.id)).join('');
+  } catch (e) { console.error(e); }
+}
+
+async function loadHistory() {
+  const list = document.getElementById('history-list');
+  list.innerHTML = '<div class="empty">Loading…</div>';
+  try {
+    const hist = await api('/api/transactions/history?limit=50');
+    if (!hist.transactions.length) { list.innerHTML = '<div class="empty">No transactions yet</div>'; return; }
+    list.innerHTML = hist.transactions.map(t => renderTx(t, currentUser.id)).join('');
+  } catch (e) { list.innerHTML = '<div class="empty">Failed to load</div>'; }
+}
+
+async function sendMoney() {
+  const receiver_phone = document.getElementById('send-phone').value.trim();
+  const amount = document.getElementById('send-amount').value;
+  const description = document.getElementById('send-desc').value.trim();
+  if (!receiver_phone || !amount) return showAlert('send-alert', 'Fill in recipient and amount', 'error');
+
+  try {
+    const data = await api('/api/transactions/send', {
+      method: 'POST',
+      body: JSON.stringify({ receiver_phone, amount: parseFloat(amount), description })
+    });
+    showAlert('send-alert', `${data.message} · New balance: KES ${fmtAmount(data.new_balance)}`, 'success');
+    document.getElementById('send-phone').value = '';
+    document.getElementById('send-amount').value = '';
+    document.getElementById('send-desc').value = '';
+    currentUser.balance = data.new_balance;
+    localStorage.setItem('mpay_user', JSON.stringify(currentUser));
+  } catch (e) { showAlert('send-alert', e.message, 'error'); }
+}
+
+async function doDeposit() {
+  const amount = document.getElementById('deposit-amount').value;
+  const description = document.getElementById('deposit-desc').value.trim();
+  if (!amount) return showAlert('deposit-alert', 'Enter an amount', 'error');
+
+  try {
+    const data = await api('/api/wallet/deposit', {
+      method: 'POST',
+      body: JSON.stringify({ amount: parseFloat(amount), description })
+    });
+    showAlert('deposit-alert', `${data.message} · New balance: KES ${fmtAmount(data.new_balance)}`, 'success');
+    document.getElementById('deposit-amount').value = '';
+    document.getElementById('deposit-desc').value = '';
+    currentUser.balance = data.new_balance;
+    localStorage.setItem('mpay_user', JSON.stringify(currentUser));
+  } catch (e) { showAlert('deposit-alert', e.message, 'error'); }
+}
+
+if (token && currentUser) { launchApp(); }
+</script>
+</body>
+</html>
